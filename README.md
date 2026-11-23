@@ -17,10 +17,11 @@ Security payloads are test inputs, not an assessment of an application. Use them
 The extension uses the Chromium Side Panel API and requires Chrome 114 or later. Compatible Chromium browsers such as Microsoft Edge may also work.
 
 1. Download or clone this repository.
-2. Open `chrome://extensions` in Chrome (or the equivalent extensions page in your browser).
-3. Turn on **Developer mode**.
-4. Select **Load unpacked** and choose this project folder.
-5. Select the extension toolbar icon to open the generator.
+2. if Download as zip then unzip it first.
+3. Open `chrome://extensions` in Chrome (or the equivalent extensions page in your browser).
+4. Turn on **Developer mode**.
+5. Select **Load unpacked** and choose this project folder.
+6. Select the extension toolbar icon to open the generator.
 
 ## Use
 

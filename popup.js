@@ -9,11 +9,70 @@ const NOTES = {
 const toFields = (types) => types.map((t) => (typeof t === 'string' ? { name: t, type: t } : { ...t }));
 let state = { fields: toFields(TDG.PRESETS.User), count: 5, secCount: 0, format: 'json', mode: 'valid', preset: 'User', category: '' };
 let statusTimer;
+let generatedOutput = '';
 
 const save = () => { try { ext.storage.local.set({ tdg2: state }); } catch (e) {} };
 function say(msg, err) {
   const s = $('status'); s.style.color = err ? '#b42318' : '#15803d'; s.textContent = msg;
   clearTimeout(statusTimer); if (msg) statusTimer = setTimeout(() => { s.textContent = ''; }, 2500);
+}
+
+async function copyText(value) {
+  try { await navigator.clipboard.writeText(value); }
+  catch (e) {
+    const temp = document.createElement('textarea');
+    temp.value = value; temp.style.position = 'fixed'; temp.style.opacity = '0';
+    document.body.appendChild(temp);
+    let copied;
+    try { temp.select(); copied = document.execCommand('copy'); }
+    finally { temp.remove(); }
+    if (!copied) throw e;
+  }
+  say('Copied to clipboard');
+}
+
+function renderValueOutput(rows) {
+  const box = $('valueOutput');
+  const showValues = state.format === 'text' || state.format === 'lines';
+  $('out').style.display = showValues ? 'none' : 'block';
+  box.style.display = showValues ? 'block' : 'none';
+  box.textContent = '';
+  if (!showValues) return;
+
+  const columns = rows.length ? Object.keys(rows[0]) : [];
+  rows.forEach((row) => {
+    const group = document.createElement('div'); group.className = `value-group${state.format === 'lines' ? ' value-group-lines' : ''}`;
+    columns.forEach((column) => {
+      const value = String(row[column]);
+      const displayedValue = state.format === 'lines' ? value.replace(/\r/g, '\\r').replace(/\n/g, '\\n') : value;
+      const line = document.createElement('div'); line.className = 'value-row';
+      if (state.format === 'text') {
+        const label = document.createElement('span'); label.textContent = `${column}: `;
+        line.appendChild(label);
+      }
+      const text = document.createElement('span'); text.textContent = displayedValue;
+      const button = document.createElement('button'); button.className = 'value-copy'; button.type = 'button';
+      button.setAttribute('aria-label', `Copy ${column} value`); button.title = 'Copy this value';
+      button.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="4.5" width="7" height="8" rx="1.5"/><path d="M9.5 3.5A1.5 1.5 0 0 0 8 2H3.5A1.5 1.5 0 0 0 2 3.5V10"/></svg>';
+      let feedback;
+      let feedbackTimer;
+      button.onclick = async () => {
+        try {
+          await copyText(displayedValue);
+          if (feedback) feedback.remove();
+          clearTimeout(feedbackTimer);
+          feedback = document.createElement('span');
+          feedback.textContent = 'Copied!';
+          feedback.setAttribute('role', 'status');
+          feedback.style.cssText = 'margin-left: 4px; color: #15803d; font: 11px system-ui, sans-serif';
+          button.after(feedback);
+          feedbackTimer = setTimeout(() => feedback.remove(), 1600);
+        } catch (e) { say('Could not copy to clipboard', true); }
+      };
+      line.append(text, button); group.appendChild(line);
+    });
+    box.appendChild(group);
+  });
 }
 
 const isSec = () => state.mode === 'security';
@@ -24,11 +83,13 @@ const currentCount = () => (isSec() ? clamp(state.secCount || secTotal()) : clam
 function generate() {
   // Security mode needs no fields: it produces a plain list of payloads
   const fields = isSec() ? [{ name: 'payload', type: 'secAny' }] : state.fields.filter((f) => f.name.trim());
-  if (!fields.length) { $('out').value = ''; $('meta').textContent = 'Add at least one field'; return; }
+  if (!fields.length) { generatedOutput = ''; $('out').value = ''; renderValueOutput([]); $('meta').textContent = 'Add at least one field'; return; }
   const count = currentCount();
   try {
     const rows = TDG.dataset(fields, count, { mode: state.mode, category: state.category });
-    $('out').value = TDG.format(rows, state.format, 'test_data');
+    generatedOutput = TDG.format(rows, state.format, 'test_data');
+    $('out').value = generatedOutput;
+    renderValueOutput(rows);
     if (isSec()) { const total = secTotal(); $('meta').textContent = `${count} payload${count > 1 ? 's' : ''} · ${Math.min(total, count)} of ${total} covered`; }
     else $('meta').textContent = `${count} row${count > 1 ? 's' : ''} · ready to copy`;
   } catch (e) { say(e.message, true); }
@@ -106,12 +167,9 @@ function setMode(m) { state.mode = m; renderMode(); changed(); }
   $('format').onchange = () => { state.format = $('format').value; changed(); };
   $('addField').onclick = () => { state.fields.push({ name: 'firstName', type: 'firstName' }); state.preset = null; renderPresets(); renderFields(); changed(); };
   $('regen').onclick = () => { generate(); say('Regenerated'); };
-  $('copy').onclick = async () => {
-    try { await navigator.clipboard.writeText($('out').value); say('Copied to clipboard'); }
-    catch (e) { $('out').removeAttribute('readonly'); $('out').select(); document.execCommand('copy'); $('out').setAttribute('readonly', ''); say('Copied to clipboard'); }
-  };
+  $('copy').onclick = () => copyText(generatedOutput).catch(() => say('Could not copy to clipboard', true));
   $('download').onclick = () => {
-    const blob = new Blob([$('out').value], { type: 'text/plain' });
+    const blob = new Blob([generatedOutput], { type: 'text/plain' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `test-data.${FILE_EXT[state.format]}`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
