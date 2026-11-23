@@ -7,7 +7,7 @@ const NOTES = {
   security: 'Attack-style test inputs (XSS, SQLi, SSRF and more). Use only on systems you are authorized to test.'
 };
 const toFields = (types) => types.map((t) => (typeof t === 'string' ? { name: t, type: t } : { ...t }));
-let state = { fields: toFields(TDG.PRESETS.User), count: 5, secCount: 0, format: 'text', mode: 'valid', preset: 'User', category: '' };
+let state = { fields: toFields(TDG.PRESETS.User), count: 5, secCount: 0, format: 'text', mode: 'valid', preset: 'User', category: '', country: '' };
 let statusTimer;
 let generatedOutput = '';
 
@@ -88,7 +88,7 @@ function generate() {
   if (!fields.length) { generatedOutput = ''; $('out').value = ''; renderValueOutput([], fields); $('meta').textContent = 'Add at least one field'; return; }
   const count = currentCount();
   try {
-    const rows = TDG.dataset(fields, count, { mode: state.mode, category: state.category });
+    const rows = TDG.dataset(fields, count, { mode: state.mode, category: state.category, country: state.country });
     generatedOutput = TDG.format(rows, state.format, 'test_data');
     $('out').value = generatedOutput;
     renderValueOutput(rows, fields);
@@ -103,6 +103,7 @@ function renderMode() {
   $('modeEdge').classList.toggle('on', state.mode === 'edge');
   $('modeSec').classList.toggle('on', isSec());
   $('catBox').style.display = isSec() ? 'block' : 'none';
+  $('countryBox').style.display = isSec() ? 'none' : 'block';
   $('presetsBox').style.display = isSec() ? 'none' : 'block'; // not needed for security payloads
   $('fieldsBox').style.display = isSec() ? 'none' : 'block';
   $('countLbl').textContent = isSec() ? 'Payloads' : 'Rows';
@@ -156,6 +157,12 @@ function setMode(m) { state.mode = m; renderMode(); changed(); }
 (async () => {
   try { const s = (await ext.storage.local.get('tdg2')).tdg2; if (s && Array.isArray(s.fields)) state = { ...state, ...s }; } catch (e) {}
   $('format').value = state.format;
+  const country = $('country');
+  [['', 'Random country']].concat(TDG.COUNTRIES.map((name) => [name, name])).forEach(([value, label]) => {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; country.appendChild(option);
+  });
+  country.value = state.country || '';
+  country.onchange = () => { state.country = country.value; changed(); };
   const cat = $('category');
   [['', `All categories (${TDG.SEC_TOTAL} payloads)`]].concat(TDG.SEC.map((c) => [c.id, `${c.label} (${c.count})`])).forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; cat.appendChild(o); });
   cat.value = state.category || '';

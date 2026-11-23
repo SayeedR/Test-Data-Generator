@@ -6,6 +6,7 @@ A lightweight browser extension for generating sample data to use in development
 
 - Generate realistic sample data, edge cases, and security test payloads.
 - Choose from presets or build a custom set of fields.
+- Select a country to generate matching phone numbers and address details.
 - Export as JSON, CSV, SQL `INSERT` statements, plain text, or one value per line.
 - Copy generated data or download it as a file.
 - Save the current settings in the browser.
@@ -25,7 +26,7 @@ The extension uses the Chromium Side Panel API and requires Chrome 114 or later.
 
 ## Use
 
-Choose a data mode, configure fields and output format, then copy or download the generated result. The extension supports up to 1,000 rows or payloads per generation.
+Choose a data mode and country, configure fields and output format, then copy or download the generated result. Country selection affects country-related fields such as phone numbers, city, region, postal code, and country. Choose **Random country** to vary these values across generated rows. The extension supports up to 1,000 rows or payloads per generation.
 
 ## Permissions and data
 
