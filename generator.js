@@ -321,9 +321,20 @@
       dob: () => iso(dateOff(-65 * 365, -18 * 365)),
       password: () => {
         const U = 'ABCDEFGHJKLMNPQRSTUVWXYZ', L = 'abcdefghijkmnopqrstuvwxyz', D = '23456789', S = '!@#$%^&*', all = U + L + D + S;
-        const p = [pick([...U]), pick([...L]), pick([...D]), pick([...S])];
-        while (p.length < 14) p.push(pick([...all]));
-        for (let i = p.length - 1; i > 0; i--) { const j = int(0, i); [p[i], p[j]] = [p[j], p[i]]; }
+        const secureIndex = (length) => {
+          if (hasSeed || !globalThis.crypto || !globalThis.crypto.getRandomValues) return int(0, length - 1);
+          const n = new Uint32Array(1);
+          const limit = Math.floor(4294967296 / length) * length;
+          do { globalThis.crypto.getRandomValues(n); } while (n[0] >= limit);
+          return n[0] % length;
+        };
+        const securePick = (chars) => chars[secureIndex(chars.length)];
+        const p = [securePick([...U]), securePick([...L]), securePick([...D]), securePick([...S])];
+        while (p.length < 14) p.push(securePick([...all]));
+        for (let i = p.length - 1; i > 0; i--) {
+          const j = secureIndex(i + 1);
+          [p[i], p[j]] = [p[j], p[i]];
+        }
         return p.join('');
       },
       street: (c) => base(c).street, city: (c) => base(c).city, state: (c) => base(c).state, zip: (c) => base(c).zip, country: (c) => base(c).country,
@@ -399,7 +410,11 @@
     const cols = rows.length ? Object.keys(rows[0]) : [];
     if (fmt === 'lines') return rows.flatMap((r) => cols.map((c) => String(r[c]).replace(/\r/g, '\\r').replace(/\n/g, '\\n'))).join('\n');
     if (fmt === 'csv') {
-      const esc = (v) => { const s = String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      const esc = (v) => {
+        let s = String(v);
+        if (/^[=+\-@]|^\t|^\r/.test(s)) s = "'" + s;
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
       return [cols.map(esc).join(',')].concat(rows.map((r) => cols.map((c) => esc(r[c])).join(','))).join('\n');
     }
     if (fmt === 'sql') {
