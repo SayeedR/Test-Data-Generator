@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Data Generator</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; display: flex; flex-direction: column; font: 13px Inter, system-ui, "Segoe UI", sans-serif; color: #1f2328; background: #fff; }
+  .hdr { flex: none; position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #eef0f4; }
+  main { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .ftr { flex: none; position: sticky; bottom: 0; z-index: 2; padding: 10px 16px 8px; background: #fff; border-top: 1px solid #eef0f4; }
+  h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  .muted { font-size: 12px; color: #57606a; }
+  .lbl { display: block; margin: 0 0 6px; font-size: 12px; font-weight: 600; }
+  .inp { width: 100%; height: 36px; padding: 0 10px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; font: inherit; color: #1f2328; }
+  .inp:focus-visible, button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 1px; }
+  .btn { height: 40px; border: 0; border-radius: 8px; font: 600 13px inherit; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+  .primary { background: #4f46e5; color: #fff; }
+  .soft { background: #eef0f4; color: #1f2328; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; background: #eef0f4; border-radius: 10px; }
+  .seg .btn { background: transparent; color: #1f2328; }
+  .seg .btn.on { background: #4f46e5; color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { height: 28px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 14px; background: #fff; font: 500 12px inherit; font-family: inherit; color: #1f2328; cursor: pointer; }
+  .chip.on { border-color: #4f46e5; background: #eef2ff; color: #3730a3; }
+  #fields { display: flex; flex-direction: column; gap: 6px; }
+  .frow { display: grid; grid-template-columns: 1fr 1fr 36px; gap: 6px; }
+  .x { width: 36px; height: 36px; padding: 0; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  #addField { height: 34px; margin-top: 6px; width: 100%; background: #fff; color: #4f46e5; border: 1px dashed #a5b4fc; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .out { display: flex; flex-direction: column; flex: 1; min-height: 200px; }
+  .outhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  #out { flex: 1; width: 100%; min-height: 160px; resize: none; padding: 10px; border: 1px solid #d0d5dd; border-radius: 8px; background: #f8f9fb; font: 12px ui-monospace, Consolas, monospace; color: #1f2328; }
+  .actions { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+  #status { min-height: 16px; margin-top: 6px; font-size: 12px; font-weight: 500; color: #15803d; }
+  #close { width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  #close:hover { background: #eef0f4; }
+</style>
+</head>
+<body>
+  <header class="hdr">
+    <h1>Test Data Generator</h1>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="muted">Updates as you edit</span>
+      <button id="close" aria-label="Close" title="Close"><svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="#57606a" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button>
+    </div>
+  </header>
+
+  <main>
+    <div>
+      <span class="lbl">Data mode</span>
+      <div class="seg"><button id="modeValid" class="btn on">Valid data</button><button id="modeEdge" class="btn">Edge cases</button><button id="modeSec" class="btn">Security</button></div>
+      <div id="modeNote" class="muted" style="margin-top:6px"></div>
+      <div id="catBox" style="margin-top:8px;display:none"><label class="lbl" for="category">Payload category</label><select id="category" class="inp"></select></div>
+    </div>
+
+    <div id="presetsBox"><span class="lbl">Presets</span><div class="chips" id="presets"></div></div>
+
+    <div id="fieldsBox">
+      <span class="lbl">Fields</span>
+      <div id="fields"></div>
+      <button id="addField" class="btn">+ Add field</button>
+    </div>
+
+    <div class="two">
+      <div><label class="lbl" for="count" id="countLbl">Rows</label><input id="count" class="inp" type="number" min="1" max="1000"></div>
+      <div><label class="lbl" for="format">Format</label>
+        <select id="format" class="inp"><option value="json">JSON</option><option value="csv">CSV</option><option value="sql">SQL INSERT</option><option value="text">Plain text</option><option value="lines">One per line (fuzzer list)</option></select></div>
+    </div>
+
+    <div class="out">
+      <div class="outhead"><label class="lbl" for="out">Generated data</label><span id="meta" class="muted"></span></div>
+      <textarea id="out" readonly spellcheck="false"></textarea>
+    </div>
+  </main>
+
+  <footer class="ftr">
+    <div class="actions">
+      <button id="copy" class="btn primary"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5"/><path d="M9.5 2.5h-6a1 1 0 0 0-1 1v6"/></svg>Copy</button>
+      <button id="regen" class="btn soft">Regenerate</button>
+      <button id="download" class="btn soft">Download</button>
+    </div>
+    <div id="status" role="status"></div>
+  </footer>
+<script src="generator.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
