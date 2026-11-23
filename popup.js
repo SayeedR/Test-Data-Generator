@@ -7,7 +7,7 @@ const NOTES = {
   security: 'Attack-style test inputs (XSS, SQLi, SSRF and more). Use only on systems you are authorized to test.'
 };
 const toFields = (types) => types.map((t) => (typeof t === 'string' ? { name: t, type: t } : { ...t }));
-let state = { fields: toFields(TDG.PRESETS.User), count: 5, secCount: 0, format: 'json', mode: 'valid', preset: 'User', category: '' };
+let state = { fields: toFields(TDG.PRESETS.User), count: 5, secCount: 0, format: 'text', mode: 'valid', preset: 'User', category: '' };
 let statusTimer;
 let generatedOutput = '';
 
@@ -31,7 +31,7 @@ async function copyText(value) {
   say('Copied to clipboard');
 }
 
-function renderValueOutput(rows) {
+function renderValueOutput(rows, fields) {
   const box = $('valueOutput');
   const showValues = state.format === 'text' || state.format === 'lines';
   $('out').style.display = showValues ? 'none' : 'block';
@@ -45,6 +45,8 @@ function renderValueOutput(rows) {
     columns.forEach((column) => {
       const value = String(row[column]);
       const displayedValue = state.format === 'lines' ? value.replace(/\r/g, '\\r').replace(/\n/g, '\\n') : value;
+      const fieldType = fields.find((field) => field.name === column)?.type || '';
+      const copiedValue = fieldType.startsWith('phone') ? displayedValue.replace(/\s+/g, '') : displayedValue;
       const line = document.createElement('div'); line.className = 'value-row';
       if (state.format === 'text') {
         const label = document.createElement('span'); label.textContent = `${column}: `;
@@ -58,7 +60,7 @@ function renderValueOutput(rows) {
       let feedbackTimer;
       button.onclick = async () => {
         try {
-          await copyText(displayedValue);
+          await copyText(copiedValue);
           if (feedback) feedback.remove();
           clearTimeout(feedbackTimer);
           feedback = document.createElement('span');
@@ -83,13 +85,13 @@ const currentCount = () => (isSec() ? clamp(state.secCount || secTotal()) : clam
 function generate() {
   // Security mode needs no fields: it produces a plain list of payloads
   const fields = isSec() ? [{ name: 'payload', type: 'secAny' }] : state.fields.filter((f) => f.name.trim());
-  if (!fields.length) { generatedOutput = ''; $('out').value = ''; renderValueOutput([]); $('meta').textContent = 'Add at least one field'; return; }
+  if (!fields.length) { generatedOutput = ''; $('out').value = ''; renderValueOutput([], fields); $('meta').textContent = 'Add at least one field'; return; }
   const count = currentCount();
   try {
     const rows = TDG.dataset(fields, count, { mode: state.mode, category: state.category });
     generatedOutput = TDG.format(rows, state.format, 'test_data');
     $('out').value = generatedOutput;
-    renderValueOutput(rows);
+    renderValueOutput(rows, fields);
     if (isSec()) { const total = secTotal(); $('meta').textContent = `${count} payload${count > 1 ? 's' : ''} · ${Math.min(total, count)} of ${total} covered`; }
     else $('meta').textContent = `${count} row${count > 1 ? 's' : ''} · ready to copy`;
   } catch (e) { say(e.message, true); }

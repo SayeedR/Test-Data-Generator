@@ -49,7 +49,7 @@
   <header class="hdr">
     <h1>Test Data Generator</h1>
     <div style="display:flex;align-items:center;gap:6px">
-      <span class="muted">Updates as you edit</span>
+      <span class="muted">Updates as you need</span>
       <button id="close" aria-label="Close" title="Close"><svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="#57606a" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button>
     </div>
   </header>
@@ -73,7 +73,7 @@
     <div class="two">
       <div><label class="lbl" for="count" id="countLbl">Rows</label><input id="count" class="inp" type="number" min="1" max="1000"></div>
       <div><label class="lbl" for="format">Format</label>
-        <select id="format" class="inp"><option value="json">JSON</option><option value="csv">CSV</option><option value="sql">SQL INSERT</option><option value="text">Plain text</option><option value="lines">One per line (fuzzer list)</option></select></div>
+        <select id="format" class="inp"><option value="json">JSON</option><option value="csv">CSV</option><option value="sql">SQL INSERT</option><option value="text" selected>Plain text</option><option value="lines">One per line (fuzzer list)</option></select></div>
     </div>
 
     <div class="out">
