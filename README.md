@@ -39,6 +39,7 @@ Generation is performed locally; the extension does not send generated data to a
 
 - Security payload mode generates test strings only. Run payloads only against systems you own or are authorized to test.
 - CSV exports prefix spreadsheet-formula-like values with an apostrophe to reduce formula-injection risk.
+- SQL exports quote table and column identifiers and escape string values.
 - Test passwords are generated locally; do not reuse them for real accounts or sensitive systems.
 - The extension enforces a restrictive Content Security Policy and uses only bundled local scripts.
 

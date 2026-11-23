@@ -418,7 +418,7 @@
       return [cols.map(esc).join(',')].concat(rows.map((r) => cols.map((c) => esc(r[c])).join(','))).join('\n');
     }
     if (fmt === 'sql') {
-      const id = (s) => String(s).replace(/\W/g, '_');
+      const id = (s) => '"' + String(s).replace(/"/g, '""') + '"';
       const lit = (v) => (typeof v === 'number' ? String(v) : typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : "'" + String(v).replace(/'/g, "''") + "'");
       return rows.map((r) => `INSERT INTO ${id(table || 'test_data')} (${cols.map(id).join(', ')}) VALUES (${cols.map((c) => lit(r[c])).join(', ')});`).join('\n');
     }
